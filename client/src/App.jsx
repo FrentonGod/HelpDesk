@@ -1,62 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./index.css";
 import "./App.css";
 import Dashboard from "./components/Dashboard";
 import TicketList from "./components/TicketList";
 import TicketForm from "./components/TicketForm";
 import TicketDetail from "./components/TicketDetail";
+import {
+  getAllTickets,
+  createTicket,
+  updateTicket,
+  deleteTicket,
+} from "./services/api";
 
 const App = () => {
   const [currentView, setCurrentView] = useState("dashboard");
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [tickets, setTickets] = useState([
-    {
-      id: 1,
-      title: "Error en el sistema de autenticación",
-      description: "Los usuarios no pueden iniciar sesión desde hace 2 horas",
-      category: "Técnico",
-      priority: "high",
-      status: "in-progress",
-      createdBy: "Juan Pérez",
-      createdAt: new Date("2026-01-09T10:30:00"),
-      assignedTo: "Soporte Técnico",
-    },
-    {
-      id: 2,
-      title: "Solicitud de nuevo equipo",
-      description:
-        "Necesito una laptop para el nuevo empleado del departamento de ventas",
-      category: "Hardware",
-      priority: "medium",
-      status: "new",
-      createdBy: "María González",
-      createdAt: new Date("2026-01-09T11:15:00"),
-      assignedTo: null,
-    },
-    {
-      id: 3,
-      title: "Problema con impresora",
-      description: "La impresora del piso 3 no está imprimiendo correctamente",
-      category: "Hardware",
-      priority: "low",
-      status: "resolved",
-      createdBy: "Carlos Rodríguez",
-      createdAt: new Date("2026-01-08T14:20:00"),
-      assignedTo: "Mantenimiento",
-      resolvedAt: new Date("2026-01-09T09:00:00"),
-    },
-  ]);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleCreateTicket = (newTicket) => {
-    const ticket = {
-      ...newTicket,
-      id: tickets.length + 1,
-      status: "new",
-      createdAt: new Date(),
-      assignedTo: null,
-    };
-    setTickets([ticket, ...tickets]);
-    setCurrentView("tickets");
+  // Cargar tickets al montar el componente
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAllTickets();
+      setTickets(data);
+    } catch (err) {
+      console.error("Error al cargar tickets:", err);
+      setError(
+        "No se pudieron cargar los tickets. Verifica que el servidor esté corriendo."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateTicket = async (newTicketData) => {
+    try {
+      setLoading(true);
+      const createdTicket = await createTicket(newTicketData);
+      setTickets([createdTicket, ...tickets]);
+      setCurrentView("tickets");
+      setError(null);
+    } catch (err) {
+      console.error("Error al crear ticket:", err);
+      setError("No se pudo crear el ticket. Intenta de nuevo.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewTicket = (ticket) => {
@@ -64,16 +61,41 @@ const App = () => {
     setCurrentView("detail");
   };
 
-  const handleUpdateTicket = (updatedTicket) => {
-    setTickets(
-      tickets.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-    );
-    setSelectedTicket(updatedTicket);
+  const handleUpdateTicket = async (updatedTicketData) => {
+    try {
+      setLoading(true);
+      const updatedTicket = await updateTicket(
+        selectedTicket.id,
+        updatedTicketData
+      );
+      setTickets(
+        tickets.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
+      );
+      setSelectedTicket(updatedTicket);
+      setError(null);
+    } catch (err) {
+      console.error("Error al actualizar ticket:", err);
+      setError("No se pudo actualizar el ticket. Intenta de nuevo.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteTicket = (ticketId) => {
-    setTickets(tickets.filter((t) => t.id !== ticketId));
-    setCurrentView("tickets");
+  const handleDeleteTicket = async (ticketId) => {
+    try {
+      setLoading(true);
+      await deleteTicket(ticketId);
+      setTickets(tickets.filter((t) => t.id !== ticketId));
+      setCurrentView("tickets");
+      setError(null);
+    } catch (err) {
+      console.error("Error al eliminar ticket:", err);
+      setError("No se pudo eliminar el ticket. Intenta de nuevo.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,10 +139,41 @@ const App = () => {
       {/* Main Content */}
       <main className="main-content">
         <div className="container">
-          {currentView === "dashboard" && (
+          {/* Mostrar error si existe */}
+          {error && (
+            <div
+              style={{
+                padding: "1rem",
+                marginBottom: "1rem",
+                backgroundColor: "#fee",
+                border: "1px solid #fcc",
+                borderRadius: "8px",
+                color: "#c33",
+              }}
+            >
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Mostrar loading */}
+          {loading && currentView !== "new" && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "2rem",
+                fontSize: "1.2rem",
+                color: "#666",
+              }}
+            >
+              ⏳ Cargando...
+            </div>
+          )}
+
+          {/* Vistas */}
+          {!loading && currentView === "dashboard" && (
             <Dashboard tickets={tickets} onViewTicket={handleViewTicket} />
           )}
-          {currentView === "tickets" && (
+          {!loading && currentView === "tickets" && (
             <TicketList tickets={tickets} onViewTicket={handleViewTicket} />
           )}
           {currentView === "new" && (

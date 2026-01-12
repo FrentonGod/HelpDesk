@@ -5,21 +5,14 @@ const TicketForm = ({ onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "Técnico",
+    category: "Hardware",
     priority: "medium",
     createdBy: "",
   });
 
   const [errors, setErrors] = useState({});
 
-  const categories = [
-    "Técnico",
-    "Hardware",
-    "Software",
-    "Red",
-    "Acceso",
-    "Otro",
-  ];
+  const categories = ["Hardware", "Software", "Red", "Accesos", "Otro"];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,7 +62,7 @@ const TicketForm = ({ onSubmit, onCancel }) => {
       setFormData({
         title: "",
         description: "",
-        category: "Técnico",
+        category: "Hardware",
         priority: "medium",
         createdBy: "",
       });
