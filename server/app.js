@@ -27,6 +27,7 @@ app.get("/", (req, res) => {
 });
 
 // Importar rutas
+app.use("/api/auth", require("./routes/auth"));
 app.use("/api/tickets", require("./routes/tickets"));
 // app.use('/api/users', require('./routes/users'));
 
@@ -43,9 +44,10 @@ const startServer = async () => {
     console.log("📝 Verifica las credenciales en el archivo .env");
   }
 
-  // Iniciar servidor
-  app.listen(PORT, () => {
+  // Iniciar servidor en todas las interfaces de red
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`🌐 Acceso en red: http://192.168.0.5:${PORT}`);
     console.log(`📊 Base de datos: ${process.env.DB_NAME}`);
   });
 };

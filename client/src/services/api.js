@@ -1,4 +1,19 @@
-const API_URL = "http://localhost:5000/api";
+// Detectar si estamos en localhost o en red
+const getApiUrl = () => {
+  // Si estamos en desarrollo y accediendo desde la red, usar la IP local
+  const hostname = window.location.hostname;
+
+  // Si hostname es localhost o 127.0.0.1, usar localhost
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:5000/api";
+  }
+
+  // Si estamos accediendo desde la red, usar la IP local del servidor
+  // Cambia esta IP por la IP de tu computadora donde corre el backend
+  return `http://${hostname}:5000/api`;
+};
+
+const API_URL = getApiUrl();
 
 // ============================================
 // SERVICIO DE TICKETS

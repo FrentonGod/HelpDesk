@@ -5,6 +5,9 @@ import Dashboard from "./components/Dashboard";
 import TicketList from "./components/TicketList";
 import TicketForm from "./components/TicketForm";
 import TicketDetail from "./components/TicketDetail";
+import Login from "./components/Login";
+import ResetPassword from "./components/ResetPassword";
+import VerifyEmail from "./components/VerifyEmail";
 import {
   getAllTickets,
   createTicket,
@@ -19,10 +22,51 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cargar tickets al montar el componente
+  // Estados de autenticación
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
+
+  // Detectar rutas especiales (reset-password, verify-email)
+  const [specialRoute, setSpecialRoute] = useState(null);
+
   useEffect(() => {
-    loadTickets();
+    const path = window.location.pathname;
+    const search = window.location.search;
+
+    if (path === "/reset-password" || search.includes("token=")) {
+      if (search.includes("token=")) {
+        // Determinar si es reset o verify basado en el contexto
+        const params = new URLSearchParams(search);
+        if (path === "/verify-email" || search.includes("verify")) {
+          setSpecialRoute("verify-email");
+        } else {
+          setSpecialRoute("reset-password");
+        }
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Verificación de autenticación normal
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (token && user) {
+      setAuthToken(token);
+      setCurrentUser(JSON.parse(user));
+      setIsAuthenticated(true);
+    } else {
+      setLoading(false);
+    }
   }, []);
+
+  // Cargar tickets cuando el usuario esté autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadTickets();
+    }
+  }, [isAuthenticated]);
 
   const loadTickets = async () => {
     try {
@@ -98,6 +142,37 @@ const App = () => {
     }
   };
 
+  // Funciones de autenticación
+  const handleLogin = (user, token) => {
+    setCurrentUser(user);
+    setAuthToken(token);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+    setAuthToken(null);
+    setIsAuthenticated(false);
+    setTickets([]);
+    setCurrentView("dashboard");
+  };
+
+  // Rutas especiales (no requieren autenticación)
+  if (specialRoute === "reset-password") {
+    return <ResetPassword />;
+  }
+
+  if (specialRoute === "verify-email") {
+    return <VerifyEmail />;
+  }
+
+  // Si no está autenticado, mostrar login
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app">
       {/* Header */}
@@ -108,30 +183,38 @@ const App = () => {
               <div className="logo-icon">🎫</div>
               <h1 className="logo-text">HelpDesk Pro</h1>
             </div>
-            <nav className="nav">
-              <button
-                className={`nav-btn ${
-                  currentView === "dashboard" ? "active" : ""
-                }`}
-                onClick={() => setCurrentView("dashboard")}
-              >
-                📊 Dashboard
-              </button>
-              <button
-                className={`nav-btn ${
-                  currentView === "tickets" ? "active" : ""
-                }`}
-                onClick={() => setCurrentView("tickets")}
-              >
-                📋 Tickets
-              </button>
-              <button
-                className={`nav-btn ${currentView === "new" ? "active" : ""}`}
-                onClick={() => setCurrentView("new")}
-              >
-                ➕ Nuevo Ticket
-              </button>
-            </nav>
+            <div className="flex items-center gap-2">
+              <nav className="nav">
+                <button
+                  className={`nav-btn ${
+                    currentView === "dashboard" ? "active" : ""
+                  }`}
+                  onClick={() => setCurrentView("dashboard")}
+                >
+                  📊 Dashboard
+                </button>
+                <button
+                  className={`nav-btn ${
+                    currentView === "tickets" ? "active" : ""
+                  }`}
+                  onClick={() => setCurrentView("tickets")}
+                >
+                  📋 Tickets
+                </button>
+                <button
+                  className={`nav-btn ${currentView === "new" ? "active" : ""}`}
+                  onClick={() => setCurrentView("new")}
+                >
+                  ➕ Nuevo Ticket
+                </button>
+              </nav>
+              <div className="user-menu">
+                <span className="user-name">👤 {currentUser?.nombre}</span>
+                <button onClick={handleLogout} className="btn-logout">
+                  🚪 Salir
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>

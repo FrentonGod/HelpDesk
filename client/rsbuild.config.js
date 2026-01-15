@@ -1,8 +1,12 @@
 // @ts-check
-import { defineConfig } from '@rsbuild/core';
-import { pluginReact } from '@rsbuild/plugin-react';
+import { defineConfig } from "@rsbuild/core";
+import { pluginReact } from "@rsbuild/plugin-react";
 
 // Docs: https://rsbuild.rs/config/
 export default defineConfig({
   plugins: [pluginReact()],
+  server: {
+    host: "0.0.0.0", // Permite acceso desde la red
+    port: 3000,
+  },
 });
